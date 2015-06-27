@@ -30,25 +30,32 @@ staticFunction	: type ms identifier ms argumentsPack ms '{' ms lines ms '}' ms {
 		;
 
 argumentsPack	: '(' ')'							{;}
-		| '(' ms arguments ms ')'					{;}
+		| '(' arguments ')'						{;}
 		;
 
-arguments	: argument							{;}
-		| argument ms ',' ms arguments					{;}
+arguments	: ms argument ms						{;}
+		| ms argument ms ',' ms arguments ms				{;}
 		;
 
-argument	: type ms ' ' ms identifier					{;}
+argument	: type ' ' ms identifier					{;}
 		;
 
-lines		: %empty							{;}
+lines		: /* empty */							{;}
 		| line								{;}
 		| line ms lines							{;}
 		;
 
 line		: ';'								{;}
+		| assignment ';'						{;}
+		| declaration ';'						{;}
 		;
 
-ms		: %empty							{;}
+assignment	: identifier ms '=' ms number ms				{printf("assigning: %s = %d\n", $1, $5);}
+		;
+
+declaration	: type ' ' ms identifier					{printf("declaring: %s %s\n", $1, $4);}
+
+ms		: /* empty */							{;}
 		| ' '								{;}
 		| ' ' ms							{;}
 		;
