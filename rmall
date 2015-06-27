@@ -1,0 +1,5 @@
+rm lex.yy.c
+rm vs.tab.c
+rm vs.tab.h
+rm vs
+
