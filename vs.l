@@ -10,7 +10,7 @@
 [a-zA-Z]+					{yylval.string = strdup(yytext); return identifier;}
 [0-9]+						{yylval.num = atoi(yytext); return number;}
 "\n"						;
-[ \{\}\[\]\(\)+-=;]				{return yytext[0];}
+[ \{\}\[\]\(\)+-=;,]				{return yytext[0];}
 .						{ECHO; yyerror("unexpected character");}
 %%
 int yywrap(void) {return 1;}
