@@ -1,1 +1,1 @@
-bison -d ./vs.y
+bison -d ./vs.y -Wnone

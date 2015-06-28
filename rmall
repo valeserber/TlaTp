@@ -1,5 +1,5 @@
-rm lex.yy.c
-rm vs.tab.c
-rm vs.tab.h
-rm vs
+rm -f lex.yy.c
+rm -f vs.tab.c
+rm -f vs.tab.h
+rm -f vs
 
