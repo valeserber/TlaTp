@@ -9,7 +9,7 @@
 "object"					{yylval.string = strdup(yytext); return type;}
 [a-zA-Z]+					{yylval.string = strdup(yytext); return identifier;}
 [0-9]+						{yylval.num = atoi(yytext); return number;}
-"\n"						;
+[\n\t]						;
 [ \{\}\[\]\(\)+-=;,]				{return yytext[0];}
 .						{ECHO; yyerror("unexpected character");}
 %%
