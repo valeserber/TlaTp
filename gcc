@@ -1,2 +1,0 @@
-gcc lex.yy.c vs.tab.c -o vs
-

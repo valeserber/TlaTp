@@ -3,11 +3,27 @@ void yyerror (char * s);
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "map.h"
+#include "map_stack.h"
+#include "utils.h"
 
 #define STATIC 1
 #define OBJECT 2
 
-static char * throwsDeclaration = " throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException";
+static MapStack map_stack;
+
+static char * throwsDeclaration = " throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException";
+static char * method = "method";
+static char * field = "field";
+static char * accessible = ".setAccessible(true);";
+
+void init();
+char * check_cast(char * id, char * value);
+char * check_identifier(char * id);
+void save_identifier(char * id, char * value);
+
+void create_map();
+void destroy_map();
 
 char * concat2(char * s1, char * s2);
 char * concat3(char * s1, char * s2, char * s3);
@@ -16,14 +32,26 @@ char * concat5(char * s1, char * s2, char * s3, char * s4, char * s5);
 char * concat6(char * s1, char * s2, char * s3, char * s4, char * s5, char * s6);
 
 char * composeFunction(int modifier, char * type, char * identifier, char * arguments, char * lines);
+char * composeMain(char * lines);
+char * composeObjectValue(char * variableSection, char * methodSection);
+
+char * composeVariableAccess(char * varAccess, char * id);
+char * composeObjectFunctionCall(char * obj, char * method, char * args);
+
+void printFile(char * file);
 %}
 
 %union {int integer; char * string; double real; char character;}
-%start variableSection
+%start file
 
+%token toIntegerCastToken
+%token toDoubleCastToken
 %token print
+%token read
+%token println
 %token ret;
-%token function;
+%token nullToken
+%token function
 %token mainToken
 %token <string> integer
 %token <string> real
@@ -34,11 +62,13 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %token <string> comparator
 %token <string> binaryOperand
 %token <string> equals
+%token <string> argToken
 
 %type <string> assignment
 %type <string> assignation
 %type <string> declaration
 %type <string> value
+%type <string> stringValue
 %type <string> integerValue
 %type <string> doubleValue
 %type <string> numberValue
@@ -71,21 +101,30 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %type <string> newVar
 %type <string> variableSection
 %type <string> methodSection
+%type <string> printProd
+%type <string> printlnProd
+%type <string> toDoubleCastProd
+%type <string> toIntegerCastProd
 
 %%
 
-file		: ms staticFunctions ms mainFunction ms				{;}
-		| ms mainFunction ms						{;}
+file		: ms staticFunctions ms mainFunction ms				{$$ = concat3($2, "\n\n", $4); printFile($$);}
+		| ms mainFunction ms						{$$ = $2; printFile($$);}
 		;
 
-mainFunction	: mainToken ms '{' lines '}'					{printf("main\n");}
+mainFunction	: mapCreator mainToken ms '{' lines '}'					{destroy_map();
+			  								$$ = composeMain($5);}
 		;
 
 staticFunctions	: staticFunction						{$$ = $1;}
-		| staticFunction ms staticFunctions				{$$ = concat3($1, "\n", $3);}
+		| staticFunctions ms staticFunction				{$$ = concat3($1, "\n", $3);}
 		;
 
-staticFunction	: type ms identifier ms argumentsDeclarPack ms '{' ms lines ms '}' ms 	{$$ = composeFunction(STATIC, $1, $3, $5, $9);printf("%s\n", $$);}
+staticFunction	: mapCreator type ms identifier ms argumentsDeclarPack ms '{' ms lines ms '}' ms {destroy_map();
+			  									$$ = composeFunction(STATIC, $2, $4, $6, $10);}
+		;
+
+mapCreator	: /* empty */							{create_map();}
 		;
 
 objectFunction 	: function ' ' ms type ms identifier ms argumentsDeclarPack ms '{' ms lines ms '}' ms 	{$$ = composeFunction(OBJECT, $4, $6, $8, $12);}
@@ -96,50 +135,81 @@ argumentsDeclarPack	: '(' ')'						{$$ = "()";}
 			;
 
 argumentsDeclar	: ms argumentDeclar ms						{$$ = $2;}
-		| ms argumentDeclar ms ',' ms argumentsDeclar ms		{$$ = concat3($2, ", ", $6);}
+		| ms argumentDeclar ms ',' ms  argumentsDeclar ms		{$$ = concat3($2, ", ", $6);}
 		;
 
-argumentDeclar	: type ' ' ms identifier					{;}
+argumentDeclar	: type ' ' ms identifier					{save_identifier($4, $1);
+			  							$$ = concat4("final ", "Object", " ", $4);}
 		;
 
 lines		: /* empty */							{$$ = "";}
-		| line								{$$ = concat2("\t", $1);}
-		| line ms lines							{$$ = concat4("\t", $1, "\n", $3);}
-		| returnStatement						{$$ = concat2("\t", $1);}
+		| line								{$$ = $1;}
+		| line ms lines							{$$ = concat3($1, "\n", $3);}
+		| returnStatement						{$$ = $1;}
 		;
 
 line		: ';'								{$$ = ";";}
 		| newVar ';'							{$$ = concat2($1, ";");}
 		| assignment ';'						{$$ = concat2($1, ";");}
 		| functionCall ';'						{$$ = concat2($1, ";");}
+		| printProd							{$$ = $1;}
+		| printlnProd
+		;
+
+printProd	: print ms '(' ms value ms ')' ms ';'				{$$ = concat3("System.out.print(", $5, ");");}
+		;
+
+printlnProd	: println ms '(' ms value ms ')' ms ';'				{$$ = concat3("System.out.println(", $5, ");");}
+		| println ms '(' ms ')' ms ';'					{$$ = "System.out.println();";}
 		;
 
 returnStatement	: ret ' ' ms value ms ';'					{$$ = concat3("return ", $4, ";");}
 		| ret ms ';'							{$$ = "return;";}
 		;
 
-assignment	: identifier ms '=' ms value ms					{$$ = concat3($1, " = ", $5);}
+assignment	: identifier ms '=' ms value ms					{$$ = concat3($1, " = ", check_cast($1, $5));}
 		;
 
-assignation	: type ' ' ms identifier ms '=' ms value ms			{$$ = concat5($1, " ", $4, " = ", $8);}
+assignation	: type ' ' ms identifier ms '=' ms value ms			{save_identifier($4, $1);
+			  							$$ = concat4($1, " ", $4, " = ");
+		  								$$ = concat6($$, "((", $1, ")", $8, ")");}
+		;
+
+declaration	: type ' ' ms identifier					{ save_identifier($4, $1);
+			  							$$ = concat3($1, " ", $4);}
 		;
 
 newVar		: assignation							{$$ = $1;}
 		| declaration							{$$ = $1;}
 		;
 
-value		: toResolveExp							{$$ = $1;}
+value		: nullToken							{$$ = "null";}
+		| toResolveExp							{$$ = $1;}
 		| integerValue							{$$ = $1;}
+		| stringValue							{$$ = $1;}
 		| doubleValue							{$$ = $1;}
 		| booleanValue							{$$ = $1;}
 		| objectValue							{$$ = $1;}
 		;
 
-integerValue	: integer							{$$ = $1;}
+stringValue	: string							{$$ = $1;}
+		| argToken							{$$ = concat3("args[", $1 + 1, "]");}
+		| toResolveExp							{$$ = $1;}
 		;
 
-doubleValue	: real								{$$ = $1;}
+integerValue	: integer							{$$ = $1;}
+		| toIntegerCastProd						{$$ = $1;}
 		;
+
+toIntegerCastProd	: toIntegerCastToken stringValue			{$$ = concat3("(Integer.valueOf((String)", $2, "))");}
+			;
+
+doubleValue	: real								{$$ = $1;}
+		| toDoubleCastProd						{$$ = $1;}
+		;
+
+toDoubleCastProd	: toDoubleCastToken stringValue				{$$ = concat3("(Double.valueOf((String)", $2, "))");}
+			;
 
 booleanValue	: booleanReturnable							{$$ = $1;}
 		| '(' ms booleanValue ms binaryOperand ms booleanValue ms ')'		{$$ = concat5("(", $3, $5, $7, ")");}
@@ -152,12 +222,12 @@ booleanReturnable	: boolean						{$$ = $1;}
 			| '(' ms booleanReturnable ms ')'			{$$ = concat3("(", $3, ")");}
 			;
 
-objectValue	: '{' variableSection methodSection'}'				{;}
+objectValue	: '{' variableSection methodSection'}'				{$$ = composeObjectValue($2, $3);}
 		;
 
 variableSection	: /* empty */							{$$ = "";}
 		| newVar ';'							{$$ = concat2($1,";");}
-		| newVar ';' variableSection					{$$ = concat3($1, ";\n", $3);}
+		| variableSection newVar ';'					{$$ = concat4($1, "\n", $2, ";");}
 		;
 
 methodSection	: /* empty */							{$$ = "";}
@@ -177,14 +247,16 @@ comparable	: identifier							{$$ = $1;}
 		| objectFunctionCall						{$$ = $1;}
 		;
 
-variableAccess	: identifier '.' variableAccess					{$$ = concat3($1, ".", $3);}
-		| identifier '.' identifier					{$$ = concat3($1, ".", $3);}
+variableAccess	: variableAccess '.' identifier					{$$ = composeVariableAccess($1, $3);}
+		| identifier '.' identifier					{$$ = composeVariableAccess($1, $3);}
 		;
 
-totalIdentifier	: identifier							{$$ = $1;}
+totalIdentifier	: identifier							{$$ = check_identifier($1);}
 		| variableAccess						{$$ = $1;}
+		;
 
-objectFunctionCall 	: totalIdentifier ':' staticFunctionCall		{$$ = concat3($1, ".", $3);}
+objectFunctionCall 	: totalIdentifier ':' identifier '(' ')'		{$$ = composeObjectFunctionCall($1, $3, NULL);}
+			| totalIdentifier ':' identifier '(' argumentsCall ')' 	{$$ = composeObjectFunctionCall($1, $3, $5);}
 			;
 
 argumentsCallPack	: '(' ')'						{$$ = "()";}
@@ -203,19 +275,23 @@ functionCall	: objectFunctionCall						{$$ = $1;}
 		| staticFunctionCall						{$$ = $1;;}
 		;
 
-staticFunctionCall	: identifier argumentsCallPack				{$$ = concat2($1, $2);}
-
-declaration	: type ' ' ms identifier					{$$ = concat3($1, " ", $4);}
+staticFunctionCall	: identifier argumentsCallPack				{$$ = concat3("VSClass.",$1, $2);}
+			;
 
 ms		: /* empty */							{;}
 		| ' '								{;}
-		| ' ' ms							{;}
+		| ms ' '							{;}
 		;
 
 %%
 
 int main(void) {
+	init();
 	return yyparse();
+}
+
+void init() {
+	map_stack = map_stack_create();
 }
 
 void yyerror (char * s) {
@@ -258,4 +334,96 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 	char * signatureMiddle = concat4(first, type, " ", identifier);
 	char * signatureFinal = concat4(signatureMiddle, arguments, throwsDeclaration, " {\n");
 	return concat3(signatureFinal, lines, "\n}");
+}
+
+void printFile(char * file) {
+	printf("%s\n", concat3("public class VSClass {", file, "}"));
+}
+
+char * composeMain(char * lines) {
+	return concat5("public static void main(String[] args) ", throwsDeclaration, " {\n", lines, "\n}\n");
+}
+
+char * composeObjectValue(char * variableSection, char * methodSection) {
+	return concat4("new Object() {", variableSection, methodSection, "}");
+}
+
+char * check_identifier(char * id) {
+	Map map = map_stack_peek(map_stack);
+	char * type;
+	if (map == NULL) {
+		printf("%s\n", id);
+		printf("intente hacer check. que carajo hago aca?\n");
+		return id;
+	};
+	type = map_get(map, id);
+	if (type == NULL) return id;
+	return concat5("((", type, ")", id, ")");
+}
+
+void save_identifier(char * id, char * value) {
+	Map map = map_stack_peek(map_stack);
+	if (map == NULL) {
+		printf("intente hacer save. que carajo hago aca?\n");
+		return;
+	}
+	map_put(map, id, value);
+}
+
+void create_map() {
+	map_stack_push(map_stack, map_create());
+}
+
+void destroy_map() {
+	Map map = map_stack_pop(map_stack);
+	if (map == NULL) {
+		printf("intente destruir y no habia nada. wtf?\n");
+		return;
+	}
+	map_free(map);
+}
+
+char * composeObjectFunctionCall(char * obj, char * meth, char * args) {
+
+	int amount = 0;
+	int i;
+	char * lastLine;
+	char * firstLine;
+	char * accessible;
+	char ** tokens;
+	if ( args != NULL && !(strcmp(args, "()") == 0) ) {
+		tokens = str_split(strdup(args), ',');
+		amount = tokens_amnt(tokens);
+	}
+	firstLine = concat2(obj, ".getClass().getDeclaredMethod(");
+	firstLine = concat4(firstLine, "\"", meth, "\"");
+	lastLine = concat2(".invoke(", obj);
+	for (i = 0; i < amount; i++) {
+		firstLine = concat2(firstLine, ", Object.class");
+		lastLine = concat3(lastLine, ", ", get_token(tokens, i));
+	}
+	firstLine = concat2(firstLine, ")");
+	lastLine = concat2(lastLine, ")");
+	accessible = "method.setAccessible(true);";
+	return concat2(firstLine, lastLine);
+}
+
+char * check_cast(char * id, char * value) {
+
+	Map map = map_stack_peek(map_stack);
+	char * type;
+	if (map == NULL) {
+		printf("%s\n", id);
+		printf("intente hacer checkc. que carajo hago aca?\n");
+		return value;
+	};
+	type = map_get(map, id);
+	if (type == NULL) return value;
+	return concat5("((", type, ")", value, ")");
+}
+
+char * composeVariableAccess(char * varAccess, char * id) {
+	char * s = concat4(varAccess, ".getClass().getDeclaredField(\"", id, "\")");
+	s = concat4(s, ".get(", varAccess, ")");
+	return s;
 }
