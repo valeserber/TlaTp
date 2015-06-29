@@ -4,6 +4,9 @@ void yyerror (char * s);
 #include <stdlib.h>
 #include <string.h>
 
+#define STATIC 1
+#define OBJECT 2
+
 static char * throwsDeclaration = " throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException";
 
 char * concat2(char * s1, char * s2);
@@ -12,14 +15,15 @@ char * concat4(char * s1, char * s2, char * s3, char * s4);
 char * concat5(char * s1, char * s2, char * s3, char * s4, char * s5);
 char * concat6(char * s1, char * s2, char * s3, char * s4, char * s5, char * s6);
 
-char * composeStaticFunction(char * type, char * identifier, char * arguments, char * lines);
+char * composeFunction(int modifier, char * type, char * identifier, char * arguments, char * lines);
 %}
 
 %union {int integer; char * string; double real; char character;}
-%start staticFunction
+%start variableSection
 
 %token print
 %token ret;
+%token function;
 %token mainToken
 %token <string> integer
 %token <string> real
@@ -32,6 +36,7 @@ char * composeStaticFunction(char * type, char * identifier, char * arguments, c
 %token <string> equals
 
 %type <string> assignment
+%type <string> assignation
 %type <string> declaration
 %type <string> value
 %type <string> integerValue
@@ -39,6 +44,7 @@ char * composeStaticFunction(char * type, char * identifier, char * arguments, c
 %type <string> numberValue
 %type <string> booleanValue
 %type <string> booleanReturnable
+%type <string> objectValue
 %type <string> comparable
 %type <string> comparison
 %type <string> variableAccess
@@ -60,7 +66,11 @@ char * composeStaticFunction(char * type, char * identifier, char * arguments, c
 %type <string> staticFunctions
 %type <string> mainFunction
 %type <string> staticFunction
+%type <string> objectFunction
 %type <string> returnStatement
+%type <string> newVar
+%type <string> variableSection
+%type <string> methodSection
 
 %%
 
@@ -75,11 +85,14 @@ staticFunctions	: staticFunction						{$$ = $1;}
 		| staticFunction ms staticFunctions				{$$ = concat3($1, "\n", $3);}
 		;
 
-staticFunction	: type ms identifier ms argumentsDeclarPack ms '{' ms lines ms '}' ms {$$ = composeStaticFunction($1, $3, $5, $9);printf("%s\n", $$);}
+staticFunction	: type ms identifier ms argumentsDeclarPack ms '{' ms lines ms '}' ms 	{$$ = composeFunction(STATIC, $1, $3, $5, $9);printf("%s\n", $$);}
 		;
 
-argumentsDeclarPack	: '(' ')'							{$$ = "()";}
-			| '(' argumentsDeclar ')'					{$$ = concat3("( ", $2, " )");}
+objectFunction 	: function ' ' ms type ms identifier ms argumentsDeclarPack ms '{' ms lines ms '}' ms 	{$$ = composeFunction(OBJECT, $4, $6, $8, $12);}
+		;
+
+argumentsDeclarPack	: '(' ')'						{$$ = "()";}
+			| '(' argumentsDeclar ')'				{$$ = concat3("( ", $2, " )");}
 			;
 
 argumentsDeclar	: ms argumentDeclar ms						{$$ = $2;}
@@ -96,8 +109,8 @@ lines		: /* empty */							{$$ = "";}
 		;
 
 line		: ';'								{$$ = ";";}
+		| newVar ';'							{$$ = concat2($1, ";");}
 		| assignment ';'						{$$ = concat2($1, ";");}
-		| declaration ';'						{$$ = concat2($1, ";");}
 		| functionCall ';'						{$$ = concat2($1, ";");}
 		;
 
@@ -108,10 +121,18 @@ returnStatement	: ret ' ' ms value ms ';'					{$$ = concat3("return ", $4, ";");
 assignment	: identifier ms '=' ms value ms					{$$ = concat3($1, " = ", $5);}
 		;
 
+assignation	: type ' ' ms identifier ms '=' ms value ms			{$$ = concat5($1, " ", $4, " = ", $8);}
+		;
+
+newVar		: assignation							{$$ = $1;}
+		| declaration							{$$ = $1;}
+		;
+
 value		: toResolveExp							{$$ = $1;}
 		| integerValue							{$$ = $1;}
 		| doubleValue							{$$ = $1;}
 		| booleanValue							{$$ = $1;}
+		| objectValue							{$$ = $1;}
 		;
 
 integerValue	: integer							{$$ = $1;}
@@ -130,6 +151,19 @@ booleanReturnable	: boolean						{$$ = $1;}
 			| comparison						{$$ = $1;}
 			| '(' ms booleanReturnable ms ')'			{$$ = concat3("(", $3, ")");}
 			;
+
+objectValue	: '{' variableSection methodSection'}'				{;}
+		;
+
+variableSection	: /* empty */							{$$ = "";}
+		| newVar ';'							{$$ = concat2($1,";");}
+		| newVar ';' variableSection					{$$ = concat3($1, ";\n", $3);}
+		;
+
+methodSection	: /* empty */							{$$ = "";}
+		| objectFunction						{$$ = concat2($1, "\n");}
+		| objectFunction ms methodSection				{$$ = concat3($1, "\n", $3);}					
+		;
 
 comparison	: numberValue comparator numberValue				{$$ = concat5("(", $1, $2, $3, ")");}
 		;
@@ -214,8 +248,14 @@ char * concat6(char * s1, char * s2, char * s3, char * s4, char * s5, char * s6)
 	return concat2(concat5(s1, s2, s3, s4, s5), s6);
 }
 
-char * composeStaticFunction(char * type, char * identifier, char * arguments, char * lines) {
-	char * signatureMiddle = concat4("public static ", type, " ", identifier);
+char * composeFunction(int modifier, char * type, char * identifier, char * arguments, char * lines) {
+	char * first;
+	if (modifier == STATIC) {
+		first = "public static ";
+	} else {
+		first = "public ";
+	}
+	char * signatureMiddle = concat4(first, type, " ", identifier);
 	char * signatureFinal = concat4(signatureMiddle, arguments, throwsDeclaration, " {\n");
 	return concat3(signatureFinal, lines, "\n}");
 }
