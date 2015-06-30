@@ -6,6 +6,8 @@
 "return"						{return ret;}
 "function"						{return function;}
 "main"							{return mainToken;}
+"if"							{return ifToken;}
+"else"							{return elseToken;}
 "Integer"|"String"|"Object"|"Boolean"|"Double"|"void"	{yylval.string = strdup(yytext);return type;}
 "true"|"false"						{yylval.string = strdup(yytext);return boolean;}
 "=="							{yylval.string = strdup(yytext);return equals;}

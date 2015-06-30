@@ -25,6 +25,8 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %token ret;
 %token function;
 %token mainToken
+%token ifToken
+%token elseToken
 %token <string> integer
 %token <string> real
 %token <string> boolean
@@ -35,6 +37,8 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %token <string> binaryOperand
 %token <string> equals
 
+%type <string> ifProd
+%type <string> elseProd
 %type <string> assignment
 %type <string> assignation
 %type <string> declaration
@@ -110,6 +114,14 @@ line		: ';'								{$$ = ";";}
 		| newVar ';'							{$$ = concat2($1, ";");}
 		| assignment ';'						{$$ = concat2($1, ";");}
 		| functionCall ';'						{$$ = concat2($1, ";");}
+		| ifProd							{$$ = $1;}		
+		;
+
+ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}'	{$$ = concat5("if (", $5, ") {\n\t", $11, "\n\t}");}
+		;
+
+elseProd	: /* empty */							{$$ = "";} 
+		| elseToken ms '{' lines '}'					{$$ = concat3("else {", $4, "}");}
 		;
 
 returnStatement	: ret ' ' ms value ms ';'					{$$ = concat3("return ", $4, ";");}
@@ -163,7 +175,7 @@ methodSection	: /* empty */							{$$ = "";}
 		| objectFunction ms methodSection				{$$ = concat3($1, "\n", $3);}					
 		;
 
-comparison	: numberValue comparator numberValue				{$$ = concat5("(", $1, $2, $3, ")");}
+comparison	: value comparator value					{$$ = concat5("(", $1, $2, $3, ")");}
 		;
 
 numberValue	: integerValue							{$$ = $1;}
