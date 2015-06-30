@@ -117,7 +117,7 @@ line		: ';'								{$$ = ";";}
 		| ifProd							{$$ = $1;}		
 		;
 
-ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if (", $5, ") {\n\t", $11, "\n\t}", $14);}
+ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if ", $5, " {\n\t", $11, "\n\t}", $14);}
 		;
 
 elseProd	: /* empty */							{$$ = "";} 
