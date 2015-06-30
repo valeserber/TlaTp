@@ -19,7 +19,7 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %}
 
 %union {int integer; char * string; double real; char character;}
-%start variableSection
+%start file
 
 %token print
 %token ret;
@@ -54,11 +54,9 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %type <string> totalIdentifier
 %type <string> argumentsCallPack
 %type <string> argumentsCall
-%type <string> argumentCall
 %type <string> argumentsDeclarPack
 %type <string> argumentsDeclar
 %type <string> argumentDeclar
-%type <string> parameter
 %type <string> toResolveExp
 %type <string> line
 %type <string> lines
