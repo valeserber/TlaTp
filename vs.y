@@ -117,11 +117,11 @@ line		: ';'								{$$ = ";";}
 		| ifProd							{$$ = $1;}		
 		;
 
-ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}'	{$$ = concat5("if (", $5, ") {\n\t", $11, "\n\t}");}
+ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if (", $5, ") {\n\t", $11, "\n\t}", $14);}
 		;
 
 elseProd	: /* empty */							{$$ = "";} 
-		| elseToken ms '{' lines '}'					{$$ = concat3("else {", $4, "}");}
+		| elseToken ms '{' ms lines ms '}'				{$$ = concat3("else {\n\t", $5, "\n\t}");}
 		;
 
 returnStatement	: ret ' ' ms value ms ';'					{$$ = concat3("return ", $4, ";");}
