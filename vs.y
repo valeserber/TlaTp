@@ -27,6 +27,7 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %token mainToken
 %token ifToken
 %token elseToken
+%token whileToken
 %token <string> integer
 %token <string> real
 %token <string> boolean
@@ -39,6 +40,7 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 
 %type <string> ifProd
 %type <string> elseProd
+%type <string> whileProd
 %type <string> assignment
 %type <string> assignation
 %type <string> declaration
@@ -115,6 +117,7 @@ line		: ';'								{$$ = ";";}
 		| assignment ';'						{$$ = concat2($1, ";");}
 		| functionCall ';'						{$$ = concat2($1, ";");}
 		| ifProd							{$$ = $1;}		
+		| whileProd							{$$ = $1;}
 		;
 
 ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if ", $5, " {\n\t", $11, "\n\t}", $14);}
