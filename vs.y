@@ -127,6 +127,9 @@ elseProd	: /* empty */							{$$ = "";}
 		| elseToken ms '{' ms lines ms '}'				{$$ = concat3("else {\n\t", $5, "\n\t}");}
 		;
 
+whileProd	: whileToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' {$$ = concat5("while ", $5, " {\n\t", $11, "\n\t}");}
+		;
+
 returnStatement	: ret ' ' ms value ms ';'					{$$ = concat3("return ", $4, ";");}
 		| ret ms ';'							{$$ = "return;";}
 		;
