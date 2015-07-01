@@ -44,6 +44,7 @@ void printFile(char * file);
 %union {int integer; char * string; double real; char character;}
 %start file
 
+%token castToken;
 %token toIntegerCastToken
 %token toDoubleCastToken
 %token print
@@ -114,6 +115,9 @@ void printFile(char * file);
 %type <string> printlnProd
 %type <string> toDoubleCastProd
 %type <string> toIntegerCastProd
+%type <string> arrayAccess
+%type <string> arrayNew
+%type <string> castProd
 
 %%
 
@@ -167,14 +171,14 @@ line		: ';'								{$$ = ";";}
 		| printlnProd						{$$ = $1;}
 		;
 
-ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if ", $5, " {\n\t", $11, "\n\t}", $14);}
+ifProd		: ifToken ms '(' ms value ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if (", $5, ") {\n\t", $11, "\n\t}", $14);}
 			;
 
 elseProd	: /* empty */							{$$ = "";} 
 			| elseToken ms '{' ms lines ms '}'				{$$ = concat3("else {\n\t", $5, "\n\t}");}
 			;
 
-whileProd	: whileToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' {$$ = concat5("while ", $5, " {\n\t", $11, "\n\t}");}
+whileProd	: whileToken ms '(' ms value ms ')' ms '{' ms lines ms '}' {$$ = concat5("while(", $5, ") {\n\t", $11, "\n\t}");}
  			;
 
 printProd	: print ms '(' ms value ms ')' ms ';'				{$$ = concat3("System.out.print(", $5, ");");}
@@ -189,6 +193,7 @@ returnStatement	: ret ' ' ms value ms ';'					{$$ = concat3("return ", $4, ";");
 		;
 
 assignment	: identifier ms '=' ms value ms					{$$ = concat3($1, " = ", check_cast($1, $5));}
+		| arrayAccess ms '=' ms value ms				{$$ = concat3($1, "=", $5);}
 		;
 
 assignation	: type ' ' ms identifier ms '=' ms value ms			{save_identifier($4, $1);
@@ -212,11 +217,20 @@ value		: nullToken							{$$ = "null";}
 		| booleanValue							{$$ = $1;}
 		| operationalValue                      {$$ = $1;}
 		| objectValue							{$$ = $1;}
+		| arrayAccess							{$$ = $1;}
+		| arrayNew							{$$ = $1;}
+		| castToken type '#' value					{$$ = concat5("((", $2, ")", $4, ")");}
 		;
 
-operationalValue	: toResolveExp						{$$ = $1}
-			| integerValue						{$$ = $1}
-			| doubleValue						{$$ = $1}
+arrayAccess	: identifier '[' value ']'					{$$ = concat4($1, "[((Integer)", $3, ")]");}
+		;
+
+arrayNew	: type '[' value ']'						{$$ = concat5("(new ", $1, "[((Integer)", $3, ")])");}
+		;
+
+operationalValue	: toResolveExp						{$$ = $1;}
+			| integerValue						{$$ = $1;}
+			| doubleValue						{$$ = $1;}
             | '(' ms operationalValue ms binaryOperand ms operationalValue ms ')' {$$ = concat5("(", $3, $5, $7, ")");}	
 			;
 
@@ -226,15 +240,15 @@ stringValue	: string							{$$ = $1;}
 		| toResolveExp							{$$ = $1;}
 		;
 
-integerValue	: integer							{$$ = $1;}
-        | integerReturnable                 				{$$ = $1;}	
+integerValue	: integer							{$$ = concat3("((Integer)",$1, ")");}
+        	| integerReturnable                 				{$$ = $1;}	
 		| toIntegerCastProd						{$$ = $1;}
 		;
 
 toIntegerCastProd	: toIntegerCastToken stringValue			{$$ = concat3("(Integer.valueOf((String)", $2, "))");}
 			;
 
-doubleValue	: real								{$$ = $1;}
+doubleValue	: real								{$$ = concat3("((Double)",$1, ")");}
 		| toDoubleCastProd						{$$ = $1;}
 		| doubleReturnable              				{$$ = $1;}
 		;
@@ -243,13 +257,14 @@ toDoubleCastProd	: toDoubleCastToken stringValue				{$$ = concat3("(Double.value
 			;
 
 booleanValue	: booleanReturnable							{$$ = $1;}
-		| '(' ms booleanValue ms booleanBinaryOperand ms booleanValue ms ')'	{$$ = concat5("(", $3, $5, $7, ")");}
+		| '(' ms value ms booleanBinaryOperand ms value ms ')'		{$$ = concat5("(", $3, $5, $7, ")");}
 		| '!' booleanValue							{$$ = concat2("!", $2);}
 		;
 
 booleanReturnable	: boolean						{$$ = $1;}
 			| toResolveExp						{$$ = $1;}
 			| comparison						{$$ = $1;}
+			| value equals value					{$$ = concat4($1, ".equals(", $3, ")");}
 			| '(' ms booleanReturnable ms ')'			{$$ = concat3("(", $3, ")");}
 			;
 
