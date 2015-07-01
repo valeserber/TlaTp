@@ -11,8 +11,7 @@
 "while"							{return whileToken;}
 "Integer"|"String"|"Object"|"Boolean"|"Double"|"void"	{yylval.string = strdup(yytext);return type;}
 "true"|"false"						{yylval.string = strdup(yytext);return boolean;}
-"=="							{yylval.string = strdup(yytext);return equals;}
-"<="|">="|"<"|">"					{yylval.string = strdup(yytext);return comparator;}
+"<="|">="|"<"|">"|"=="			{yylval.string = strdup(yytext);return comparator;}
 "&&"|"||"						{yylval.string = strdup(yytext);return booleanBinaryOperand;}
 "+"|"-"|"*"|"%"|"/"|"^"					{yylval.string = strdup(yytext);return binaryOperand;}
 [0-9]+							{yylval.string = strdup(yytext); return integer;}

@@ -37,8 +37,6 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %token <string> comparator
 %token <string> booleanBinaryOperand
 %token <string> binaryOperand
-%token <string> equals
-
 %type <string> ifProd
 %type <string> elseProd
 %type <string> whileProd

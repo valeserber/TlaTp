@@ -3,14 +3,14 @@ Integer fibonacci (Integer numero) {
 	Integer b = 1;
 	Integer c = 0;
 	Integer num = numero;
-	if (num == 1) {
+	if (num==1) {
 		return 1;
 	}
-	while (i < num -1) {
-		c = a + b;
+	while (i<(num-1)) {
+		c = a+b;
 		a = b;
 		b = c;
-		i = i + 1;
+		i = i+1;
 	}
 	return c;
 }

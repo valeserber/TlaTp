@@ -2,11 +2,11 @@ Boolean esPrimo (Integer numero) {
 	Boolean primo = true;
 	Integer num = numero;
 	Integer divisor = 2;
-	while (primo && divisor<num) {
-		if (num % divisor==0) {
+    while (((divisor<num)&&(primo==true))){
+		if((num%divisor)==0){
 			primo = false;
 			return primo;
-		} else {
+		}else{
 			divisor = divisor+1;
 		}
 	}
