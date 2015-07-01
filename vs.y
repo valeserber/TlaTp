@@ -35,6 +35,7 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %token <string> identifier
 %token <string> type
 %token <string> comparator
+%token <string> booleanBinaryOperand
 %token <string> binaryOperand
 %token <string> equals
 
@@ -45,14 +46,18 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 %type <string> assignation
 %type <string> declaration
 %type <string> value
+%type <string> operationalValue
 %type <string> integerValue
 %type <string> doubleValue
 %type <string> numberValue
 %type <string> booleanValue
 %type <string> booleanReturnable
+%type <string> integerReturnable
+%type <string> doubleReturnable
 %type <string> objectValue
 %type <string> comparable
 %type <string> comparison
+%type <string> operation
 %type <string> variableAccess
 %type <string> objectFunctionCall
 %type <string> staticFunctionCall
@@ -148,17 +153,26 @@ value		: toResolveExp							{$$ = $1;}
 		| integerValue							{$$ = $1;}
 		| doubleValue							{$$ = $1;}
 		| booleanValue							{$$ = $1;}
+        | operationalValue                      {$$ = $1;}
 		| objectValue							{$$ = $1;}
 		;
 
+operationalValue	: toResolveExp						{$$ = $1}
+			| integerValue						{$$ = $1}
+			| doubleValue						{$$ = $1}
+            | '(' ms operationalValue ms binaryOperand ms operationalValue ms ')' {$$ = concat5("(", $3, $5, $7, ")");}	
+			;
+
 integerValue	: integer							{$$ = $1;}
-		;
+                | integerReturnable                 				{$$ = $1;}	
+                ;
 
 doubleValue	: real								{$$ = $1;}
-		;
+  	        | doubleReturnable              				{$$ = $1;}
+            ;
 
 booleanValue	: booleanReturnable							{$$ = $1;}
-		| '(' ms booleanValue ms binaryOperand ms booleanValue ms ')'		{$$ = concat5("(", $3, $5, $7, ")");}
+		| '(' ms booleanValue ms booleanBinaryOperand ms booleanValue ms ')'	{$$ = concat5("(", $3, $5, $7, ")");}
 		| '!' booleanValue							{$$ = concat2("!", $2);}
 		;
 
@@ -167,6 +181,18 @@ booleanReturnable	: boolean						{$$ = $1;}
 			| comparison						{$$ = $1;}
 			| '(' ms booleanReturnable ms ')'			{$$ = concat3("(", $3, ")");}
 			;
+
+integerReturnable   : integer            					{$$ = $1;}
+                    | toResolveExp             					{$$ = $1;}
+                    | operation                					{$$ = $1;}
+                    | '(' ms integerReturnable ms ')'				{$$ = concat3("(", $3, ")");}
+                    ;
+
+doubleReturnable    : real               				{$$ = $1;}
+                    | toResolveExp             					{$$ = $1;}
+                    | operation                 				{$$ = $1;}
+                    | '(' ms doubleReturnable ms ')'				{$$ = concat3("(", $3, ")");}
+                    ;
 
 objectValue	: '{' variableSection methodSection'}'				{;}
 		;
@@ -184,6 +210,9 @@ methodSection	: /* empty */							{$$ = "";}
 comparison	: value comparator value					{$$ = concat5("(", $1, $2, $3, ")");}
 		;
 
+operation	: operationalValue binaryOperand operationalValue		{$$ = concat5("(", $1, $2, $3, ")");}
+		    ;
+
 numberValue	: integerValue							{$$ = $1;}
 		| doubleValue							{$$ = $1;}
 		;
@@ -199,6 +228,7 @@ variableAccess	: identifier '.' variableAccess					{$$ = concat3($1, ".", $3);}
 
 totalIdentifier	: identifier							{$$ = $1;}
 		| variableAccess						{$$ = $1;}
+        ;
 
 objectFunctionCall 	: totalIdentifier ':' staticFunctionCall		{$$ = concat3($1, ".", $3);}
 			;
