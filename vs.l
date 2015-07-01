@@ -4,9 +4,9 @@
 %%
 "\""[ a-zA-Z0-9|&!+-=;:,]*"\""				{yylval.string = strdup(yytext); return string;}
 "$0"|"$"[1-9][0-9]*					{yylval.string = strdup(yytext); return argToken;}
-"%i"							{return toIntegerCastToken;}
-"%d"							{return toDoubleCastToken;}
-"%c"							{return castToken;}
+"^i"							{return toIntegerCastToken;}
+"^d"							{return toDoubleCastToken;}
+"^c"							{return castToken;}
 "println"						{return println;}
 "print"							{return print;}
 "read"							{return readToken;}
