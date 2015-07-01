@@ -2,6 +2,7 @@ Integer fibonacci (Integer numero) {
 	Integer a = 0;
 	Integer b = 1;
 	Integer c = 0;
+	Integer i = 0;
 	Integer num = numero;
 	if (num==1) {
 		return 1;
