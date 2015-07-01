@@ -16,5 +16,8 @@ Integer fibonacci (Integer numero) {
 }
 
 main {
-
+	String s = read;
+	Integer number = ^is;
+	Integer a = fibonacci(number);
+	println(a);
 }
