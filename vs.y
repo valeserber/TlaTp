@@ -232,6 +232,7 @@ arrayNew	: type '[' value ']'						{$$ = concat5("(new ", $1, "[((Integer)", $3,
 operationalValue	: toResolveExp						{$$ = $1;}
 			| integerValue						{$$ = $1;}
 			| doubleValue						{$$ = $1;}
+			| stringValue						{$$ = $1;}
             | '(' ms operationalValue ms binaryOperand ms operationalValue ms ')' {$$ = concat5("(", $3, $5, $7, ")");}	
 			;
 

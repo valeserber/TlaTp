@@ -1,10 +1,13 @@
-Integer hola(Integer number) {
-	Integer b =1;
-	while (((a>1)&&(b>1))){
-		b = 2;
+void hola(Integer number) {
+	Integer i = 0;
+	while (i<number){
+		println("hola!");
+		i = i+1;
 	}
 }
 
 main {
-
+	print("Ingrese un numero: ");
+	Integer num = ^iread;
+	hola(num);
 }

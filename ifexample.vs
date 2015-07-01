@@ -1,16 +1,17 @@
 Integer holas(Integer num){
-	if(((num>1)&&(num>1))){
-		Integer a = 1;
-		Integer c = 2;
+	if(num>5){
+		return 10;
+	}
+	if(num>=3){
+		return 15;
 	}else{
-		Integer b = 2;
+		return 20;
 	}
-	if(a>1){
-	
-	}
-	return 1;
 }
 
 main {
 
+	print("Ingrese un numero: ");
+	Integer num = ^iread;
+	println("Valor devuelto: "+holas(num));
 }
