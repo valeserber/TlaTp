@@ -2,4 +2,6 @@ rm -f lex.yy.c
 rm -f vs.tab.c
 rm -f vs.tab.h
 rm -f vs
-
+rm -f vs.y~
+rm -f vs.l~
+rm -f input.vs~
