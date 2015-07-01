@@ -53,6 +53,9 @@ void printFile(char * file);
 %token nullToken
 %token function
 %token mainToken
+%token ifToken
+%token elseToken
+%token whileToken
 %token <string> integer
 %token <string> real
 %token <string> boolean
@@ -60,23 +63,31 @@ void printFile(char * file);
 %token <string> identifier
 %token <string> type
 %token <string> comparator
+%token <string> booleanBinaryOperand
 %token <string> binaryOperand
 %token <string> equals
 %token <string> argToken
 
+%type <string> ifProd
+%type <string> elseProd
+%type <string> whileProd
 %type <string> assignment
 %type <string> assignation
 %type <string> declaration
 %type <string> value
+%type <string> operationalValue
 %type <string> stringValue
 %type <string> integerValue
 %type <string> doubleValue
 %type <string> numberValue
 %type <string> booleanValue
 %type <string> booleanReturnable
+%type <string> integerReturnable
+%type <string> doubleReturnable
 %type <string> objectValue
 %type <string> comparable
 %type <string> comparison
+%type <string> operation
 %type <string> variableAccess
 %type <string> objectFunctionCall
 %type <string> staticFunctionCall
@@ -84,11 +95,9 @@ void printFile(char * file);
 %type <string> totalIdentifier
 %type <string> argumentsCallPack
 %type <string> argumentsCall
-%type <string> argumentCall
 %type <string> argumentsDeclarPack
 %type <string> argumentsDeclar
 %type <string> argumentDeclar
-%type <string> parameter
 %type <string> toResolveExp
 %type <string> line
 %type <string> lines
@@ -152,9 +161,21 @@ line		: ';'								{$$ = ";";}
 		| newVar ';'							{$$ = concat2($1, ";");}
 		| assignment ';'						{$$ = concat2($1, ";");}
 		| functionCall ';'						{$$ = concat2($1, ";");}
+		| ifProd							{$$ = $1;}		
+		| whileProd							{$$ = $1;}
 		| printProd							{$$ = $1;}
-		| printlnProd
+		| printlnProd						{$$ = $1;}
 		;
+
+ifProd		: ifToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' elseProd	{$$ = concat6("if ", $5, " {\n\t", $11, "\n\t}", $14);}
+			;
+
+elseProd	: /* empty */							{$$ = "";} 
+			| elseToken ms '{' ms lines ms '}'				{$$ = concat3("else {\n\t", $5, "\n\t}");}
+			;
+
+whileProd	: whileToken ms '(' ms booleanValue ms ')' ms '{' ms lines ms '}' {$$ = concat5("while ", $5, " {\n\t", $11, "\n\t}");}
+ 			;
 
 printProd	: print ms '(' ms value ms ')' ms ';'				{$$ = concat3("System.out.print(", $5, ");");}
 		;
@@ -189,8 +210,16 @@ value		: nullToken							{$$ = "null";}
 		| stringValue							{$$ = $1;}
 		| doubleValue							{$$ = $1;}
 		| booleanValue							{$$ = $1;}
+		| operationalValue                      {$$ = $1;}
 		| objectValue							{$$ = $1;}
 		;
+
+operationalValue	: toResolveExp						{$$ = $1}
+			| integerValue						{$$ = $1}
+			| doubleValue						{$$ = $1}
+            | '(' ms operationalValue ms binaryOperand ms operationalValue ms ')' {$$ = concat5("(", $3, $5, $7, ")");}	
+			;
+
 
 stringValue	: string							{$$ = $1;}
 		| argToken							{$$ = concat3("args[", $1 + 1, "]");}
@@ -198,6 +227,7 @@ stringValue	: string							{$$ = $1;}
 		;
 
 integerValue	: integer							{$$ = $1;}
+        | integerReturnable                 				{$$ = $1;}	
 		| toIntegerCastProd						{$$ = $1;}
 		;
 
@@ -206,13 +236,14 @@ toIntegerCastProd	: toIntegerCastToken stringValue			{$$ = concat3("(Integer.val
 
 doubleValue	: real								{$$ = $1;}
 		| toDoubleCastProd						{$$ = $1;}
+		| doubleReturnable              				{$$ = $1;}
 		;
 
 toDoubleCastProd	: toDoubleCastToken stringValue				{$$ = concat3("(Double.valueOf((String)", $2, "))");}
 			;
 
 booleanValue	: booleanReturnable							{$$ = $1;}
-		| '(' ms booleanValue ms binaryOperand ms booleanValue ms ')'		{$$ = concat5("(", $3, $5, $7, ")");}
+		| '(' ms booleanValue ms booleanBinaryOperand ms booleanValue ms ')'	{$$ = concat5("(", $3, $5, $7, ")");}
 		| '!' booleanValue							{$$ = concat2("!", $2);}
 		;
 
@@ -221,6 +252,19 @@ booleanReturnable	: boolean						{$$ = $1;}
 			| comparison						{$$ = $1;}
 			| '(' ms booleanReturnable ms ')'			{$$ = concat3("(", $3, ")");}
 			;
+
+integerReturnable   : integer            					{$$ = $1;}
+                    | toResolveExp             					{$$ = $1;}
+                    | operation                					{$$ = $1;}
+                    | '(' ms integerReturnable ms ')'				{$$ = concat3("(", $3, ")");}
+                    ;
+
+doubleReturnable    : real               				{$$ = $1;}
+                    | toResolveExp             					{$$ = $1;}
+                    | operation                 				{$$ = $1;}
+                    | '(' ms doubleReturnable ms ')'				{$$ = concat3("(", $3, ")");}
+                    ;
+
 
 objectValue	: '{' variableSection methodSection'}'				{$$ = composeObjectValue($2, $3);}
 		;
@@ -235,8 +279,11 @@ methodSection	: /* empty */							{$$ = "";}
 		| objectFunction ms methodSection				{$$ = concat3($1, "\n", $3);}					
 		;
 
-comparison	: numberValue comparator numberValue				{$$ = concat5("(", $1, $2, $3, ")");}
+comparison	: value comparator value					{$$ = concat5("(", $1, $2, $3, ")");}
 		;
+
+operation	: operationalValue binaryOperand operationalValue		{$$ = concat5("(", $1, $2, $3, ")");}
+		    ;
 
 numberValue	: integerValue							{$$ = $1;}
 		| doubleValue							{$$ = $1;}
