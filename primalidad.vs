@@ -17,5 +17,5 @@ main {
 	String s = read;
 	Integer number = ^is;
 	Boolean a = esPrimo(number);
-	println("a");
+	println(a);
 }
