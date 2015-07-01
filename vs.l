@@ -10,6 +10,7 @@
 "println"						{return println;}
 "print"							{return print;}
 "read"							{return readToken;}
+"rand"							{return randToken;}
 "return"						{return ret;}
 "function"						{return function;}
 "main"							{return mainToken;}

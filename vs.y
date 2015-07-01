@@ -49,6 +49,7 @@ void printFile(char * file);
 %token toDoubleCastToken
 %token print
 %token readToken
+%token randToken
 %token println
 %token ret;
 %token nullToken
@@ -119,6 +120,7 @@ void printFile(char * file);
 %type <string> arrayAccess
 %type <string> arrayNew
 %type <string> castProd
+%type <string> randValue
 
 %%
 
@@ -220,6 +222,7 @@ value		: nullToken							{$$ = "null";}
 		| objectValue							{$$ = $1;}
 		| arrayAccess							{$$ = $1;}
 		| arrayNew							{$$ = $1;}
+		| randValue							{$$ = $1;}
 		| castToken type '#' value					{$$ = concat5("((", $2, ")", $4, ")");}
 		;
 
@@ -244,8 +247,11 @@ stringValue	: string							{$$ = $1;}
 		;
 
 integerValue	: integer							{$$ = concat3("((Integer)",$1, ")");}
-        	| integerReturnable                 				{$$ = $1;}	
+        	| integerReturnable                 				{$$ = $1;}
 		| toIntegerCastProd						{$$ = $1;}
+		;
+
+randValue	: randToken '#' value						{$$ = concat3("((Integer)((int)(Math.random()*", $3, ")))");}
 		;
 
 toIntegerCastProd	: toIntegerCastToken stringValue			{$$ = concat3("(Integer.valueOf((String)", $2, "))");}
