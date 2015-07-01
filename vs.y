@@ -12,7 +12,7 @@ void yyerror (char * s);
 
 static MapStack map_stack;
 
-static char * throwsDeclaration = " throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException";
+static char * throwsDeclaration = " throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, IOException";
 static char * method = "method";
 static char * field = "field";
 static char * accessible = ".setAccessible(true);";
@@ -113,6 +113,7 @@ void printFile(char * file);
 %type <string> methodSection
 %type <string> printProd
 %type <string> printlnProd
+%type <string> readProd
 %type <string> toDoubleCastProd
 %type <string> toIntegerCastProd
 %type <string> arrayAccess
@@ -236,6 +237,7 @@ operationalValue	: toResolveExp						{$$ = $1;}
 
 
 stringValue	: string							{$$ = $1;}
+		| readToken							{$$ = "(new BufferedReader(new InputStreamReader(System.in))).readLine()";}
 		| argToken							{$$ = concat3("args[", $1 + 1, "]");}
 		| toResolveExp							{$$ = $1;}
 		;
@@ -399,7 +401,7 @@ char * composeFunction(int modifier, char * type, char * identifier, char * argu
 }
 
 void printFile(char * file) {
-	printf("%s\n", concat3("public class VSClass {", file, "}"));
+	printf("%s\n", concat3("import java.io.BufferedReader;import java.io.IOException;import java.io.InputStreamReader;import java.lang.reflect.InvocationTargetException;public class VSClass {", file, "}"));
 }
 
 char * composeMain(char * lines) {
