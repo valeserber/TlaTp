@@ -9,5 +9,8 @@ Integer factorial(Integer numero){
 }
 
 main {
-
+	String s = read;
+	Integer number = ^is;
+	Integer a = factorial(number);
+	println(a);
 }
