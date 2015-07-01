@@ -2,6 +2,7 @@
 
 ## How to compile the compiler
 
+##### run programs in this order
 ##### 1) bison
 ##### 2) flex
 ##### 3) gcc
