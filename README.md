@@ -1,13 +1,13 @@
 # TlaTp
 
-## run executables in this order
+## How to compile the compiler
 
 ##### 1) bison
 ##### 2) flex
 ##### 3) gcc
 
-## rmall to remove all files created with the steps above
+## How to compile VS code
 
-## Compiling
-
-##### ./vs < input.vs
+##### run vsc.sh passing as arguments: PATH-TO-VS-PROGRAM, PATH-TO-VS-CODE-FILE
+###### example:
+###### ./vsc.sh ./vs ./input.vs
